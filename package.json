@@ -1,0 +1,21 @@
+{
+  "name": "ai-pr-reviewer",
+  "version": "1.0.0",
+  "description": "Reusable GitHub Action: review PRs with a cheap LLM, post line comments, and emit a copy-paste fix prompt to Slack.",
+  "type": "module",
+  "bin": {
+    "ai-pr-review": "src/index.js"
+  },
+  "scripts": {
+    "review": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@octokit/rest": "^21.0.2",
+    "openai": "^4.77.0",
+    "parse-diff": "^0.11.1"
+  }
+}

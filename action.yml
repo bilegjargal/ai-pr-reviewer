@@ -1,0 +1,87 @@
+name: "AI PR Reviewer"
+description: "Review PRs with a cheap LLM (DeepSeek/Kimi), post line comments, and send a copy-paste fix prompt to Slack."
+author: "bek"
+
+inputs:
+  provider:
+    description: "LLM provider for reviews: deepseek | kimi"
+    required: false
+    default: "deepseek"
+  model:
+    description: "Override the provider's default model (optional)"
+    required: false
+    default: ""
+  fix-severity:
+    description: "Minimum severity to include in the fix prompt: nit | warning | issue"
+    required: false
+    default: "issue"
+  notify:
+    description: "Where to send results: slack | pr | both"
+    required: false
+    default: "both"
+  llm-api-key:
+    description: "API key for the chosen LLM provider"
+    required: true
+  github-token:
+    description: "GitHub token (usually secrets.GITHUB_TOKEN)"
+    required: true
+  slack-webhook-url:
+    description: "Slack incoming webhook URL (for fenced-block posts)"
+    required: false
+    default: ""
+  slack-bot-token:
+    description: "Slack bot token (enables file-snippet posts for long prompts)"
+    required: false
+    default: ""
+  slack-channel:
+    description: "Slack channel ID (required if using bot token)"
+    required: false
+    default: ""
+
+outputs:
+  has-issues:
+    description: "true if any fix-worthy issues were found"
+    value: ${{ steps.run.outputs.has_issues }}
+  issue-count:
+    description: "number of fix-worthy issues"
+    value: ${{ steps.run.outputs.issue_count }}
+  fix-prompt:
+    description: "the rendered copy-paste prompt"
+    value: ${{ steps.run.outputs.fix_prompt }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+
+    - name: Cache deps
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.action_path }}/node_modules
+        key: ai-pr-reviewer-${{ runner.os }}-${{ hashFiles(format('{0}/package.json', github.action_path)) }}
+
+    - name: Install deps
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: npm install --omit=dev --no-audit --no-fund
+
+    - name: Run reviewer
+      id: run
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        INPUT_PROVIDER: ${{ inputs.provider }}
+        INPUT_MODEL: ${{ inputs.model }}
+        INPUT_FIX_SEVERITY: ${{ inputs.fix-severity }}
+        INPUT_NOTIFY: ${{ inputs.notify }}
+        LLM_API_KEY: ${{ inputs.llm-api-key }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        SLACK_WEBHOOK_URL: ${{ inputs.slack-webhook-url }}
+        SLACK_BOT_TOKEN: ${{ inputs.slack-bot-token }}
+        SLACK_CHANNEL: ${{ inputs.slack-channel }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: node src/index.js

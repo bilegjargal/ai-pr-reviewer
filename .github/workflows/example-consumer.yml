@@ -1,0 +1,28 @@
+# Copy this file into ANY repo at: .github/workflows/ai-review.yml
+# Then add the required secrets in that repo's Settings → Secrets.
+name: AI PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: AI PR Reviewer
+        uses: bek/ai-pr-reviewer@v1   # <-- change to your published repo + tag
+        with:
+          provider: deepseek          # or: kimi
+          fix-severity: issue         # collect only real issues into the fix prompt
+          notify: both                # slack | pr | both
+          llm-api-key: ${{ secrets.LLM_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          # For long prompts as file snippets, also set:
+          # slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          # slack-channel: ${{ secrets.SLACK_CHANNEL }}
