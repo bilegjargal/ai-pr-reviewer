@@ -4,7 +4,7 @@
   "description": "Reusable GitHub Action: review PRs with a cheap LLM, post line comments, and emit a copy-paste fix prompt to Slack.",
   "type": "module",
   "bin": {
-    "ai-pr-review": "src/index.js"
+    "ai-pr-reviewer": "bin/setup.js"
   },
   "scripts": {
     "review": "node src/index.js",

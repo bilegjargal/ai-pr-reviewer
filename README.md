@@ -28,6 +28,20 @@ PR opened/updated
 
 ## Integrate into any repo
 
+### Quick install (recommended)
+
+From inside the repo you want reviewed:
+
+```
+npx github:bilegjargal/ai-pr-reviewer
+```
+
+It interactively scaffolds `.github/workflows/ai-review.yml` and sets the
+required secrets via the [`gh` CLI](https://cli.github.com) (you must be
+`gh auth login`'d). Then commit the workflow, push, and open a PR.
+
+### Manual install
+
 1. Copy `.github/workflows/example-consumer.yml` into the target repo as
    `.github/workflows/ai-review.yml` and update the `uses:` line.
 2. Add these secrets to that repo (Settings → Secrets and variables → Actions):
