@@ -23,7 +23,7 @@ PR opened/updated
 
 ## Setup (publish once)
 
-1. Push this repo to GitHub, e.g. `bek/ai-pr-reviewer`.
+1. Push this repo to GitHub, e.g. `bilegjargal/ai-pr-reviewer`.
 2. Tag a release: `git tag v1 && git push --tags`.
 
 ## Integrate into any repo

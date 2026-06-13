@@ -1,6 +1,6 @@
 name: "AI PR Reviewer"
 description: "Review PRs with a cheap LLM (DeepSeek/Kimi), post line comments, and send a copy-paste fix prompt to Slack."
-author: "bek"
+author: "bilegjargal"
 
 inputs:
   provider:

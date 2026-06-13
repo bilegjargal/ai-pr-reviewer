@@ -34,6 +34,23 @@ export function makeGitHub({ token, owner, repo }) {
       };
     },
 
+    // Existing inline review comments on the PR, as a Set of "path:line"
+    // fingerprints. Used to avoid re-posting identical comments every time the
+    // action re-runs on `synchronize`.
+    async existingCommentKeys(pull_number) {
+      const comments = await octokit.paginate(octokit.pulls.listReviewComments, {
+        owner,
+        repo,
+        pull_number,
+        per_page: 100,
+      });
+      return new Set(
+        comments
+          .filter((c) => c.line != null)
+          .map((c) => `${c.path}:${c.line}`),
+      );
+    },
+
     async postReview({ pull_number, commit_id, inline, orphan }) {
       if (inline.length === 0 && orphan.length === 0) {
         await octokit.pulls.createReview({

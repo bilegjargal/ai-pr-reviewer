@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: AI PR Reviewer
-        uses: bek/ai-pr-reviewer@v1   # <-- change to your published repo + tag
+        uses: bilegjargal/ai-pr-reviewer@v1   # <-- repo + release tag
         with:
           provider: deepseek          # or: kimi
           fix-severity: issue         # collect only real issues into the fix prompt

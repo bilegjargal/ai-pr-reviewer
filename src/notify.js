@@ -22,22 +22,7 @@ export async function notifySlack({ webhookUrl, botToken, channel, prompt, prUrl
 
   // Prefer a file snippet when we have a bot token and the prompt is large.
   if (botToken && channel && prompt.length > 2800) {
-    const res = await fetch("https://slack.com/api/files.upload", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${botToken}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        channels: channel,
-        content: prompt,
-        filename: `fix-prompt-pr.txt`,
-        title: `Fix prompt — ${issueCount} issue(s)`,
-        initial_comment: header,
-      }),
-    });
-    const json = await res.json();
-    if (!json.ok) throw new Error(`Slack upload failed: ${json.error}`);
+    await uploadSnippet({ botToken, channel, prompt, issueCount, header });
     return;
   }
 
@@ -57,4 +42,70 @@ export async function notifySlack({ webhookUrl, botToken, channel, prompt, prUrl
   }
 
   console.warn("No Slack credentials provided; skipping Slack notification.");
+}
+
+// Upload the prompt as a file via Slack's external-upload flow. The legacy
+// files.upload endpoint was retired in 2025, so this is the three-step dance:
+// 1) reserve an upload URL, 2) PUT the bytes there, 3) finalize + share to the
+// channel with an initial comment.
+async function uploadSnippet({ botToken, channel, prompt, issueCount, header }) {
+  const filename = "fix-prompt-pr.txt";
+  const bytes = Buffer.byteLength(prompt, "utf8");
+
+  // 1) Reserve an upload URL.
+  const getUrl = await slackGet(
+    "https://slack.com/api/files.getUploadURLExternal",
+    botToken,
+    { filename, length: String(bytes) },
+  );
+  const { upload_url, file_id } = getUrl;
+
+  // 2) PUT the raw content to the returned URL.
+  const put = await fetch(upload_url, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: prompt,
+  });
+  if (!put.ok) throw new Error(`Slack upload PUT failed: ${put.status} ${put.statusText}`);
+
+  // 3) Finalize and share into the channel with the header as the comment.
+  await slackPostJson(
+    "https://slack.com/api/files.completeUploadExternal",
+    botToken,
+    {
+      files: [{ id: file_id, title: `Fix prompt — ${issueCount} issue(s)` }],
+      channel_id: channel,
+      initial_comment: header,
+    },
+  );
+}
+
+// POST form-encoded to a Slack Web API method and assert ok.
+async function slackGet(url, botToken, params) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${botToken}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams(params),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(`Slack ${url} failed: ${json.error}`);
+  return json;
+}
+
+// POST JSON to a Slack Web API method and assert ok.
+async function slackPostJson(url, botToken, payload) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${botToken}`,
+      "Content-Type": "application/json; charset=utf-8",
+    },
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(`Slack ${url} failed: ${json.error}`);
+  return json;
 }

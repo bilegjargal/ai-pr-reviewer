@@ -65,9 +65,29 @@ Rules:
         continue;
       }
       for (const c of parsed.comments ?? []) {
-        all.push({ ...c, path: c.path || f.path });
+        const norm = normalizeComment(c, f.path);
+        if (norm) all.push(norm);
       }
     }
     return all;
   };
+}
+
+const SEVERITIES = new Set(["nit", "warning", "issue"]);
+
+// Coerce a raw model comment into a well-formed one, or null if it's unusable.
+// Models occasionally return out-of-spec severities or non-numeric line values;
+// we clamp those rather than letting them silently drop out downstream.
+export function normalizeComment(c, fallbackPath) {
+  const path = c.path || fallbackPath;
+  const line = Number(c.line);
+  const body = typeof c.body === "string" ? c.body.trim() : "";
+  if (!path || !Number.isInteger(line) || line < 1 || !body) return null;
+
+  let severity = String(c.severity ?? "").toLowerCase();
+  if (!SEVERITIES.has(severity)) {
+    console.warn(`Unexpected severity "${c.severity}" for ${path}:${line}; treating as "warning".`);
+    severity = "warning";
+  }
+  return { path, line, severity, body };
 }

@@ -44,11 +44,18 @@ async function main() {
 
   // ---- 4. Post the review (unless slack-only) ----
   if (notifyTarget === "pr" || notifyTarget === "both") {
+    // Drop comments we already posted on a previous run (the action re-runs on
+    // every push), so repeated runs don't pile up duplicate inline comments.
+    const seen = await gh.existingCommentKeys(prNumber);
+    const freshInline = inline.filter((c) => !seen.has(`${c.path}:${c.line}`));
+    const skipped = inline.length - freshInline.length;
+    if (skipped > 0) core.info(`Skipping ${skipped} already-posted comment(s).`);
+
     core.info("Posting review comments to the PR...");
     await gh.postReview({
       pull_number: prNumber,
       commit_id: pr.headSha,
-      inline,
+      inline: freshInline,
       orphan,
     });
   }
