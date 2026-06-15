@@ -34,6 +34,19 @@ test("renderFixPrompt lists each issue with path, line, and severity", () => {
   assert.match(out, /- b\.js:12 — \[warning\] missing await/);
 });
 
+test("renderFixPrompt quotes the source line when code is present", () => {
+  const out = renderFixPrompt({
+    owner: "o",
+    repo: "r",
+    branch: "b",
+    prNumber: 1,
+    prUrl: "http://x",
+    issues: [{ path: "a.js", line: 5, severity: "issue", body: "null deref", code: "  return user.name;" }],
+  });
+  // The exact code is quoted so the agent matches by content, not line number.
+  assert.match(out, /- a\.js:5 — \[issue\] null deref\n {4}`return user\.name;`/);
+});
+
 test("renderFixPrompt includes the PR url", () => {
   const out = renderFixPrompt({
     owner: "o",

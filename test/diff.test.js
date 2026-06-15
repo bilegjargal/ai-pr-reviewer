@@ -22,10 +22,17 @@ index 222..333 100644
 
 test("buildValidLineMap collects only added lines in the new file", () => {
   const map = buildValidLineMap(DIFF);
-  assert.deepEqual([...map.get("foo.js")].sort((a, b) => a - b), [2, 4]);
+  assert.deepEqual([...map.get("foo.js").keys()].sort((a, b) => a - b), [2, 4]);
   // The removed line doesn't consume a new-file number, so the added
   // (renamed) line sits at new-file line 10.
-  assert.deepEqual([...map.get("bar.js")], [10]);
+  assert.deepEqual([...map.get("bar.js").keys()], [10]);
+});
+
+test("buildValidLineMap captures the source text for each added line", () => {
+  const map = buildValidLineMap(DIFF);
+  assert.equal(map.get("foo.js").get(2), "const b = 2;");
+  assert.equal(map.get("foo.js").get(4), "const d = 4;");
+  assert.equal(map.get("bar.js").get(10), "const renamed = 1;");
 });
 
 test("buildValidLineMap excludes context and removed lines", () => {
@@ -45,7 +52,7 @@ index 000..111
 +line one
 +line two`;
   const map = buildValidLineMap(added);
-  assert.deepEqual([...map.get("new.js")].sort((a, b) => a - b), [1, 2]);
+  assert.deepEqual([...map.get("new.js").keys()].sort((a, b) => a - b), [1, 2]);
 });
 
 test("partitionComments splits on whether the line is in the diff", () => {

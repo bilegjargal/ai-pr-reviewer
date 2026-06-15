@@ -61,7 +61,11 @@ async function main() {
   }
 
   // ---- 5. Collect fix-worthy issues and emit prompt ----
-  const issues = comments.filter((c) => severityRank(c.severity) >= severityRank(severityToCollect));
+  // Attach the actual source line from the diff so the fix prompt can quote it
+  // (grounds each item in real code instead of a line number that may be stale).
+  const issues = comments
+    .filter((c) => severityRank(c.severity) >= severityRank(severityToCollect))
+    .map((c) => ({ ...c, code: validMap.get(c.path)?.get(c.line) }));
   core.setOutput("has_issues", String(issues.length > 0));
   core.setOutput("issue_count", String(issues.length));
 

@@ -1,7 +1,12 @@
 // Render a self-contained, copy-paste-ready prompt for the Claude mobile app.
 export function renderFixPrompt({ owner, repo, branch, prNumber, prUrl, issues }) {
   const items = issues
-    .map((c) => `- ${c.path}:${c.line} — [${c.severity}] ${c.body}`)
+    .map((c) => {
+      const head = `- ${c.path}:${c.line} — [${c.severity}] ${c.body}`;
+      // Quote the exact source line so the agent locates the code by content
+      // rather than trusting the line number, which may have shifted.
+      return c.code ? `${head}\n    \`${c.code.trim()}\`` : head;
+    })
     .join("\n");
 
   return `Apply the following code review feedback to PR #${prNumber} on ${owner}/${repo} (branch: ${branch}).
