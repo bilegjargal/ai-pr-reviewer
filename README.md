@@ -49,11 +49,36 @@ required secrets via the [`gh` CLI](https://cli.github.com) (you must be
    | Secret | Required | Purpose |
    |---|---|---|
    | `LLM_API_KEY` | yes | DeepSeek or Kimi API key |
-   | `SLACK_WEBHOOK_URL` | for Slack | Incoming webhook for fenced-block posts |
-   | `SLACK_BOT_TOKEN` | optional | Enables file-snippet posts for long prompts |
+   | `SLACK_BOT_TOKEN` | recommended | Posts the full prompt as a file snippet (no truncation). See [Set up the Slack bot](#set-up-the-slack-bot). |
    | `SLACK_CHANNEL` | with bot token | Channel ID to post to |
+   | `SLACK_WEBHOOK_URL` | fallback | Simpler setup, but caps messages at ~2800 chars. |
 
    `GITHUB_TOKEN` is provided automatically by Actions.
+
+## Set up the Slack bot
+
+The bot token is the recommended path: it posts the **complete** fix prompt as a
+file snippet, so nothing is truncated no matter how many issues a PR has. (A plain
+incoming webhook is simpler to create but caps each message at ~2800 chars.) This
+is an **internal app** in your own workspace — no public listing or Slack review
+needed.
+
+1. Go to <https://api.slack.com/apps> → **Create New App** → **From scratch**.
+2. Name it (e.g. "AI PR Reviewer") and pick your workspace.
+3. **OAuth & Permissions** → under *Bot Token Scopes*, add:
+   - `chat:write` — post messages
+   - `files:write` — upload the prompt as a snippet
+4. **Install to Workspace** (top of the same page) → authorize. Copy the
+   **Bot User OAuth Token** (starts with `xoxb-`).
+5. In Slack, invite the bot to the target channel: `/invite @AI PR Reviewer`.
+6. Get the **channel ID**: open the channel → click its name → the ID
+   (`C0XXXXXXX`) is at the bottom of the *About* tab.
+7. Add the secrets to the consumer repo:
+   - `SLACK_BOT_TOKEN` = the `xoxb-…` token
+   - `SLACK_CHANNEL` = the `C0XXXXXXX` channel ID
+
+That's it — leave `SLACK_WEBHOOK_URL` unset to go bot-only, or set it too as a
+fallback. Rotate the `xoxb-` token if it's ever exposed (same page → *Regenerate*).
 
 ## Inputs
 
