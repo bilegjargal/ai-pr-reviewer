@@ -1,6 +1,29 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { normalizeComment } from "../src/reviewer.js";
+import { normalizeComment, isIgnored } from "../src/reviewer.js";
+
+test("isIgnored skips lock files and generated/vendored paths", () => {
+  for (const p of [
+    "package-lock.json",
+    "app/package-lock.json",
+    "pnpm-lock.yaml",
+    "go.sum",
+    "Cargo.lock",
+    "dist/bundle.js",
+    "frontend/build/main.css",
+    "vendor/lib/x.go",
+    "assets/app.min.js",
+    "src/__snapshots__/x.snap",
+  ]) {
+    assert.equal(isIgnored(p), true, `expected ${p} to be ignored`);
+  }
+});
+
+test("isIgnored keeps real source files", () => {
+  for (const p of ["src/reviewer.js", "lib/foo.ts", "main.py", "README.md", "packages/core/index.ts"]) {
+    assert.equal(isIgnored(p), false, `expected ${p} to be reviewed`);
+  }
+});
 
 test("normalizeComment passes through a well-formed comment", () => {
   const out = normalizeComment(

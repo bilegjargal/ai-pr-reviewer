@@ -47,6 +47,16 @@ Rules:
     const all = [];
     for (const f of files) {
       if (!f.patch) continue; // binary / too-large files have no patch
+      if (isIgnored(f.path)) {
+        console.info(`Skipping ${f.path} (generated/vendored — not worth LLM tokens).`);
+        continue;
+      }
+      if (f.patch.length > MAX_PATCH_CHARS) {
+        console.info(
+          `Skipping ${f.path} (patch is ${f.patch.length} chars > ${MAX_PATCH_CHARS} cap).`,
+        );
+        continue;
+      }
       const res = await client.chat.completions.create({
         model: model || cfg.defaultModel,
         temperature: 0,
@@ -72,6 +82,26 @@ Rules:
     return all;
   };
 }
+
+// Skip files whose diffs are machine-generated, vendored, or otherwise not
+// worth spending LLM tokens on. These are the usual suspects that quietly
+// dominate a PR's token count (a single lock-file bump can be 10k+ lines).
+const IGNORE_PATTERNS = [
+  /(^|\/)(package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|bun\.lockb)$/,
+  /(^|\/)(Cargo\.lock|poetry\.lock|Gemfile\.lock|composer\.lock|go\.sum)$/,
+  /(^|\/)(dist|build|out|vendor|node_modules|\.next|coverage)\//,
+  /\.(min\.js|min\.css|map|snap)$/,
+  /(^|\/)__snapshots__\//,
+];
+
+export function isIgnored(path) {
+  return IGNORE_PATTERNS.some((re) => re.test(path));
+}
+
+// Hard cap on a single file's patch size. Anything bigger is almost certainly
+// generated and would burn tokens with little review value. ~16k chars ≈ a few
+// thousand tokens — generous for hand-written changes, tight for bundles.
+const MAX_PATCH_CHARS = 16_000;
 
 const SEVERITIES = new Set(["nit", "warning", "issue"]);
 
