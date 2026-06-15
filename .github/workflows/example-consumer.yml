@@ -22,7 +22,8 @@ jobs:
           notify: both                # slack | pr | both
           llm-api-key: ${{ secrets.LLM_API_KEY }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Recommended: bot token posts the full prompt as a file snippet.
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          slack-channel: ${{ secrets.SLACK_CHANNEL }}
+          # Optional fallback (truncates long prompts at ~2800 chars):
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          # For long prompts as file snippets, also set:
-          # slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          # slack-channel: ${{ secrets.SLACK_CHANNEL }}

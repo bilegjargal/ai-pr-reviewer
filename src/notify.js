@@ -20,14 +20,22 @@ ${items}`;
 export async function notifySlack({ webhookUrl, botToken, channel, prompt, prUrl, issueCount }) {
   const header = `🤖 *${issueCount} issue(s)* found in <${prUrl}|PR review>`;
 
-  // Prefer a file snippet when we have a bot token and the prompt is large.
-  if (botToken && channel && prompt.length > 2800) {
+  // Bot-first: a file snippet carries the full prompt at any size with a clean
+  // mobile copy button. Use it whenever a bot token + channel are configured.
+  if (botToken && channel) {
     await uploadSnippet({ botToken, channel, prompt, issueCount, header });
     return;
   }
 
-  // Otherwise post a fenced block via webhook (one-tap copy in Slack mobile).
+  // Fallback: post a fenced block via webhook (one-tap copy in Slack mobile).
+  // Slack section text caps at ~3000 chars, so oversized prompts get truncated.
   if (webhookUrl) {
+    if (prompt.length > 2800) {
+      console.warn(
+        `Prompt is ${prompt.length} chars; webhook truncates to 2800. ` +
+          "Configure SLACK_BOT_TOKEN + SLACK_CHANNEL to post the full prompt.",
+      );
+    }
     await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
